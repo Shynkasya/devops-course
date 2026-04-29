@@ -74,3 +74,34 @@
         requirements: "{{ app_dir }}/devops-ai-assistant/10_Implementation/01_vm/requirements.txt"
         virtualenv: "{{ app_dir }}/venv"
         virtualenv_command: python3 -m venv
+
+    - name: Скопіювати unit-файл сервісу
+      copy:
+        src: training-app.service
+        dest: /etc/systemd/system/training-app.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart training-app
+
+    - name: Активувати автозапуск сервісу
+      systemd:
+        name: training-app
+        enabled: yes
+
+    - name: Запустити сервіс
+      systemd:
+        name: training-app
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart training-app
+      systemd:
+        name: training-app
+        state: restarted
