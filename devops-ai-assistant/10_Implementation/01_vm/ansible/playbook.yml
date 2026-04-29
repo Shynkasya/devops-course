@@ -61,11 +61,15 @@
 
     - name: Створити файл .env
       copy:
-        content: "PORT=5000\n"
+        content: |
+          PORT=5000
+          POSTGRES_PASSWORD={{ db_password }}
         dest: "{{ app_dir }}/.env"
         owner: "{{ app_user }}"
         group: "{{ app_user }}"
         mode: '0600'
+      notify:
+        - Restart training-app
 
     - name: Встановити Python-залежності додатку
       become: yes
@@ -95,6 +99,27 @@
       systemd:
         name: training-app
         state: started
+
+    - name: Встановити Docker
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: yes
+
+    - name: Додати користувача training до групи docker
+      user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: yes
+
+    - name: Запустити PostgreSQL контейнер
+      command: docker compose up -d
+      args:
+        chdir: "{{ app_dir }}/devops-ai-assistant/10_Implementation/01_vm/"
+      environment:
+        POSTGRES_PASSWORD: "{{ db_password }}"
 
   handlers:
     - name: Reload systemd
